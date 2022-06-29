@@ -3,10 +3,120 @@ import unittest
 
 import regex
 
+from matcher import Str, any, Charset, SPECIAL_QUOTES
 
-# class TestCompile(unittest.TestCase):
-#     def test_compile(self):
-#         pass
+
+DIGITS = SPECIAL_QUOTES['d']
+
+class TestSearch(unittest.TestCase):
+
+    def test_scan_simple(self):
+        s = regex.Search(DIGITS, '*', True)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.scan(s1, 1, 1, len(s1))),
+                         list(range(1, 6)))
+
+    def test_scan_start(self):
+        s = regex.Search(DIGITS, '*', True)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.scan(s1, 1, 2, len(s1))),
+                         list(range(2, 6)))
+        s1 = 'ab123c'  # failed
+        self.assertEqual(list(s.scan(s1, 1, 2, len(s1))), [])
+
+    def test_scan_end(self):
+        s = regex.Search(DIGITS, '*', True)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.scan(s1, 1, 1, 1)), [1])
+
+    def test_search_asterisk(self):
+        s = regex.Search(DIGITS, '*', False)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.search(s1, 1)),
+                         list(range(1, 6)))
+
+    def test_search_add(self):
+        s = regex.Search(DIGITS, '+', False)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.search(s1, 1)),
+                         list(range(2, 6)))
+
+    def test_search_question_mark(self):
+        s = regex.Search(DIGITS, '?', False)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.search(s1, 1)),
+                         list(range(1, 3)))
+
+    def test_search_repeat1(self):
+        s = regex.Search(DIGITS, '{2}', False)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.search(s1, 1)), [3])
+
+    def test_search_repeat2(self):
+        s = regex.Search(DIGITS, '{2,3}', False)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.search(s1, 1)), [3, 4])
+
+    def test_search_greedy(self):
+        s = regex.Search(DIGITS, '*', True)
+        s1 = 'a0123bc'
+        self.assertEqual(list(s.search(s1, 1)),
+                         list(range(5, 0, -1)))
+
+
+class TestCompile(unittest.TestCase):
+
+    def test_simple(self):
+        self.assertEqual(list(regex.compile('abc*def')),
+                         ['ab', regex.Search('c', '*', True), 'def'])
+
+    def test_asterisk(self):
+        self.assertEqual(list(regex.compile('abc.*def')),
+                         ['abc', regex.Search(any, '*', True), 'def'])
+
+    def test_add(self):
+        self.assertEqual(list(regex.compile('abc.+def')),
+                         ['abc', regex.Search(any, '+', True), 'def'])
+
+    def test_question_mark(self):
+        self.assertEqual(list(regex.compile('abc.?def')),
+                         ['abc', regex.Search(any, '?', True), 'def'])
+
+    def test_two_searches(self):
+        self.assertEqual(list(regex.compile('abc.*def.*hij')),
+                         ['abc', regex.Search(any, '*', True), 'def', regex.Search(any, '*', True), 'hij'])
+
+    def test_quote(self):
+        self.assertEqual(list(regex.compile('abc\.\*def')),
+                         ['abc.*def'])
+        self.assertEqual(list(regex.compile('abc.\*def')),
+                         ['abc', any, '*def'])
+        self.assertEqual(list(regex.compile('abc\.*def')),
+                         ['abc', regex.Search('.', '*', True), 'def'])
+
+    def test_special_quote(self):
+        self.assertEqual(list(regex.compile('abc\ddef')),
+                         ['abc', SPECIAL_QUOTES['d'], 'def'])
+
+    def test_repeat(self):
+        self.assertEqual(list(regex.compile('abc.{2,3}def')),
+                         ['abc', regex.Search(any, '{2,3}', True), 'def'])
+        self.assertEqual(list(regex.compile('abc.{2}def')),
+                         ['abc', regex.Search(any, '{2}', True), 'def'])
+
+    def test_greedy(self):
+        self.assertEqual(list(regex.compile('abc.*?def.*')),
+                         ['abc', regex.Search(any, '*', False), 'def', regex.Search(any, '*', True)])
+
+    def test_charset1(self):
+        self.assertEqual(list(regex.compile('abc[a-z]*def')),
+                         ['abc', regex.Search(Charset.eval('a-z', 0)[0], '*', True), 'def'])
+        self.assertEqual(list(regex.compile('abc[^a-z]*def')),
+                         ['abc', regex.Search(Charset.eval('^a-z', 0)[0], '*', True), 'def'])
+        self.assertEqual(list(regex.compile('abc[a-zA-Z]*def')),
+                         ['abc', regex.Search(Charset.eval('a-zA-Z', 0)[0], '*', True), 'def'])
+        self.assertEqual(list(regex.compile('abc[a-zA-Z\s]*def')),
+                         ['abc', regex.Search(Charset.eval('a-zA-Z\s', 0)[0], '*', True), 'def'])
 
 
 class TestRegex(unittest.TestCase):

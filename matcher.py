@@ -36,6 +36,9 @@ class Charset(object):
     def __repr__(self):
         return f'charset({self.include}, "{"".join(sorted(self.charset))}")'
 
+    def __eq__(self, o):
+        return self.charset == o.charset and self.include == o.include
+
     @classmethod
     def eval(cls, exp, cur):
         self = cls()
