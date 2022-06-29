@@ -2,7 +2,7 @@ import sys
 import logging
 import argparse
 
-import pyregex
+import regex
 
 
 def main():
@@ -17,7 +17,22 @@ def main():
     logger.addHandler(handler)
     logger.setLevel(args.loglevel)
 
-    print(pyregex.match('abc[a-z]*def', 'abczzdef'))
+    print(regex.match('abc.*def', 'abczzdef'))
+    print(regex.match('abc[a-z]*def', 'abczzdef'))
+
+    # print(list(regex.compile('abc*def')))
+    # print(list(regex.compile('abc.*def')))
+    # print(list(regex.compile('abc.+def')))
+    # print(list(regex.compile('abc.?def')))
+    # print(list(regex.compile('abc.*def.*hij')))
+    # print(list(regex.compile('abc\.\*def')))
+    # print(list(regex.compile('abc.\*def')))
+    # print(list(regex.compile('abc\.*def')))
+    # print(list(regex.compile('abc\ddef')))
+    # print(list(regex.compile('abc.{2,3}def')))
+    # print(list(regex.compile('abc.{2}def')))
+    # print(list(regex.compile('abc.*?def.*')))
+    # print(list(regex.compile('abc[a-z]*def')))
 
 
 if __name__ == '__main__':
