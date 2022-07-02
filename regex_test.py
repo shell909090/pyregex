@@ -171,3 +171,12 @@ class TestRegex(unittest.TestCase):
         self.assertEqual(bool(regex.match('abc[a-zA-Z]*def', 'abczZdef')), True)
         self.assertEqual(bool(regex.match('abc[a-zA-Z]*def', 'abc00def')), False)
         self.assertEqual(bool(regex.match('abc[a-zA-Z\s]*def', 'abcz zdef')), True)
+
+    def test_group(self):
+        m = regex.match('abc([a-z]*)def', 'abczzdef')
+        self.assertEqual(bool(m), True)
+        self.assertEqual((m.groups[1].start, m.groups[1].end), (3, 5))
+        m = regex.match('(abc([a-z]*))def', 'abczzdef')
+        self.assertEqual(bool(m), True)
+        self.assertEqual((m.groups[1].start, m.groups[1].end), (0, 5))
+        self.assertEqual((m.groups[2].start, m.groups[2].end), (3, 5))
