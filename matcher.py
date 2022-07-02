@@ -2,12 +2,24 @@ import string
 import logging
 
 
+class Context(object):
+
+    def __init__(self, s):
+        self.s = s
+        self.len = len(self.s)
+        self.matches = []
+        self.groups = []
+
+    def __repr__(self):
+        return f'<regex context>'
+
+
 class Str(str):
 
-    def slip(self, s, cur):
-        if len(s)-cur < len(self):
+    def __call__(self, ctx, cur):
+        if ctx.len-cur < len(self):
             return False, cur
-        if not s[cur:].startswith(self):
+        if ctx.s[cur:cur+len(self)] != self:
             return False, cur
         return True, cur+len(self)
 
@@ -17,8 +29,8 @@ class Any(object):
     def __repr__(self):
         return '.'
 
-    def slip(self, s, cur):
-        if len(s) <= cur:
+    def __call__(self, ctx, cur):
+        if ctx.len <= cur:
             return False, cur
         return True, cur+1
 
@@ -73,10 +85,10 @@ class Charset(object):
 
         return self, cur
 
-    def slip(self, s, cur):
-        if len(s) <= cur:
+    def __call__(self, ctx, cur):
+        if ctx.len <= cur:
             return False, cur
-        if self.include != (s[cur] in self.charset):
+        if self.include != (ctx.s[cur] in self.charset):
             return False, cur
         return True, cur+1
 
@@ -91,26 +103,34 @@ SPECIAL_QUOTES = {
 }
 
 
-def eval(exp, cur):
-    if len(exp) <= cur:
-        raise Exception()
+class GroupMatch(object):
 
-    if exp[cur] == '.':
-        return any, cur+1
+    def __init__(self, n, name, start):
+        self.n = n
+        self.name = name
+        self.start = start
+        self.end = None
 
-    # TODO: \A \b \B \Z
-    if exp[cur] == '\\':
-        cur += 1
-        if len(exp) <= cur:
-            raise Exception()  # FIXME: compile exception
-        c = exp[cur]
-        cur += 1
-        if c in SPECIAL_QUOTES:
-            return SPECIAL_QUOTES[c], cur
-        return c, cur
+    def __repr__(self):
+        return f'<group "{self.name}" {self.n}>: {self.start}-{self.end or ""}'
 
-    if exp[cur] == '[':
-        return Charset.eval(exp, cur+1)
 
-    c = exp[cur]
-    return c, cur+1
+class Group(object):
+
+    def __init__(self, name, n):
+        self.name = name
+        self.n = n
+
+    def __repr__(self):
+        return f'<group "{self.name}" {self.n+1}>'
+
+    def left(self, ctx, cur):
+        if len(ctx.groups) <= self.n:
+            ctx.groups.append(GroupMatch(self.n, self.name, cur))
+        else:
+            ctx.groups[self.n].start = cur
+        return True, cur
+
+    def right(self, ctx, cur):
+        ctx.groups[self.n].end = cur
+        return True, cur

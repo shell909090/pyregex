@@ -17,8 +17,10 @@ def main():
     logger.addHandler(handler)
     logger.setLevel(args.loglevel)
 
-    print(regex.match('abc.*def', 'abczzdef'))
-    print(regex.match('abc[a-z]*def', 'abczzdef'))
+    # print(regex.match('abc.*def', 'abczzdef'))
+    # print(regex.match('abc[a-z]*def', 'abczzdef'))
+
+    print(regex.match('abc(?P<pp>.*)def', 'abczzdef'))
 
 
 if __name__ == '__main__':
