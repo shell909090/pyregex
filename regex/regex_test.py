@@ -1,9 +1,8 @@
 import string
 import unittest
 
-import regex
-
-from matcher import Context, Str, any, Charset, SPECIAL_QUOTES
+from . import regex
+from .matcher import Context, Str, any, Charset, SPECIAL_QUOTES
 
 
 DIGITS = SPECIAL_QUOTES['d']

@@ -1,30 +1,39 @@
 import logging
+from typing import Union, Callable, Iterator, List, Tuple, Generator, Optional, Any as AnyType
 
-from matcher import Context, Str, any, Charset, SPECIAL_QUOTES, GroupMatch, Group
+from .matcher import Context, Str, any, Charset, SPECIAL_QUOTES, GroupMatch, Group
+
+
+# Type alias for matchers
+Matcher = Union[Str, Charset, 'any.__class__', Callable[[Context, int], Tuple[bool, int]]]
+Element = Union[str, Str, 'Search', Matcher, Callable[[Context, int], Tuple[bool, int]]]
 
 
 class Search(object):
 
-    def __init__(self, m, repeat, greedy):
-        self.m = m
-        self.repeat = repeat
-        self.greedy = greedy
-        self.smallest = self.longest = 0
+    def __init__(self, m: Matcher, repeat: str, greedy: bool) -> None:
+        self.m: Matcher = m
+        self.repeat: str = repeat
+        self.greedy: bool = greedy
+        self.smallest: int = 0
+        self.longest: int = 0
         if repeat.startswith('{'):
-            repeat = repeat.strip('{}')
+            repeat_str = repeat.strip('{}')
             if ',' not in self.repeat:
-                self.smallest = self.longest = int(repeat)
+                self.smallest = self.longest = int(repeat_str)
             else:
-                repeat = repeat.split(',', 2)
-                self.smallest, self.longest = int(repeat[0]), int(repeat[1])
+                repeat_parts = repeat_str.split(',', 2)
+                self.smallest, self.longest = int(repeat_parts[0]), int(repeat_parts[1])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'search({self.m}, {self.repeat}, {self.greedy})'
 
-    def __eq__(self, o):
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, Search):
+            return False
         return self.m == o.m and self.repeat == o.repeat and self.greedy == o.greedy
 
-    def scan(self, ctx, cur, start, end):
+    def scan(self, ctx: Context, cur: int, start: int, end: int) -> Generator[int, None, None]:
         ''' all the pos that the NEXT matcher could possible be '''
         while end >= cur:
             r, next = self.m(ctx, cur)
@@ -34,7 +43,7 @@ class Search(object):
                 return
             cur = next
 
-    def search(self, ctx, cur):
+    def search(self, ctx: Context, cur: int) -> Iterator[int]:
         if self.repeat == '*':
             r = self.scan(ctx, cur, cur, len(ctx.s))
         elif self.repeat == '+':
@@ -50,8 +59,8 @@ class Search(object):
         return r
 
 
-def buffered(f):
-    def _(self, exp):
+def buffered(f: Callable[['Regex', str], Generator[Element, None, None]]) -> Callable[['Regex', str], Generator[Union[Str, Element], None, None]]:
+    def _(self: 'Regex', exp: str) -> Generator[Union[Str, Element], None, None]:
         buf = ''
         for m in f(self, exp):
             if isinstance(m, str):
@@ -66,8 +75,8 @@ def buffered(f):
     return _
 
 
-def debugging(f):
-    def _(self, ctx, ecur, scur, depth):
+def debugging(f: Callable[['Regex', Context, int, int, int], Tuple[bool, int]]) -> Callable[['Regex', Context, int, int, int], Tuple[bool, int]]:
+    def _(self: 'Regex', ctx: Context, ecur: int, scur: int, depth: int) -> Tuple[bool, int]:
         logging.info(f'{"+"*depth}run: "{self.e[:ecur]}{self.e[ecur:]}", "{ctx.s[:scur]}[{ctx.s[scur:]}]"')
         r = f(self, ctx, ecur, scur, depth)
         if r:
@@ -78,19 +87,20 @@ def debugging(f):
 
 class Regex(object):
 
-    def __init__(self, exp=None):
-        self.e = []
-        self.groups = []
+    def __init__(self, exp: Optional[str] = None) -> None:
+        self.e: List[Element] = []
+        self.groups: List[Group] = []
+        self.stack: List[Group] = []
         if exp is not None:
             self.compile(exp)
 
-    def compile(self, exp):
+    def compile(self, exp: str) -> None:
         self.stack = []
         self.e = list(self._compile(exp))
         del self.stack
 
     @buffered
-    def _compile(self, exp):
+    def _compile(self, exp: str) -> Generator[Element, None, None]:
         cur = 0
         while len(exp) > cur:
             m, cur = self.eval(exp, cur)
@@ -124,7 +134,7 @@ class Regex(object):
 
             yield Search(m, repeat, greedy)
 
-    def eval(self, exp, cur):
+    def eval(self, exp: str, cur: int) -> Tuple[Union[Element, Callable[[Context, int], Tuple[bool, int]]], int]:
         if len(exp) <= cur:
             raise Exception()
 
@@ -167,7 +177,7 @@ class Regex(object):
         return c, cur+1
 
     @debugging
-    def _match(self, ctx, ecur, scur, depth):
+    def _match(self, ctx: Context, ecur: int, scur: int, depth: int) -> Tuple[bool, int]:
         sinit = scur
         while len(self.e) > ecur:
             # logging.info(f'loop {self.e[ecur:]}, "{s[scur:]}"')
@@ -194,16 +204,17 @@ class Regex(object):
 
         return True, scur
 
-    def match(self, s):
+    def match(self, s: str) -> Optional[Context]:
         ctx = Context(s)
         ctx.groups.append(GroupMatch(0, '', 0))
         r = self._match(ctx, 0, 0, 0)
         if r[0]:
             ctx.groups[0].end = r[1]
             return ctx
+        return None
 
 
-def match(exp, s):
+def match(exp: str, s: str) -> Optional[Context]:
     # import re
     # m = re.match(exp, s)
     # return bool(m)

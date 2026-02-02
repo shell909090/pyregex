@@ -1,22 +1,23 @@
 import string
 import logging
+from typing import List, Tuple, Set, Dict, Optional
 
 
 class Context(object):
 
-    def __init__(self, s):
-        self.s = s
-        self.len = len(self.s)
-        self.matches = []
-        self.groups = []
+    def __init__(self, s: str) -> None:
+        self.s: str = s
+        self.len: int = len(self.s)
+        self.matches: List[int] = []
+        self.groups: List['GroupMatch'] = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<regex context>'
 
 
 class Str(str):
 
-    def __call__(self, ctx, cur):
+    def __call__(self, ctx: Context, cur: int) -> Tuple[bool, int]:
         if ctx.len-cur < len(self):
             return False, cur
         if ctx.s[cur:cur+len(self)] != self:
@@ -26,33 +27,35 @@ class Str(str):
 
 class Any(object):
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '.'
 
-    def __call__(self, ctx, cur):
+    def __call__(self, ctx: Context, cur: int) -> Tuple[bool, int]:
         if ctx.len <= cur:
             return False, cur
         return True, cur+1
 
-any = Any()
+any: Any = Any()
 
 
 class Charset(object):
 
-    def __init__(self, charset=None, include=True):
+    def __init__(self, charset: Optional[Set[str]] = None, include: bool = True) -> None:
         if charset is None:
             charset = set()
-        self.charset = charset
-        self.include = include
+        self.charset: Set[str] = charset
+        self.include: bool = include
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'charset({self.include}, "{"".join(sorted(self.charset))}")'
 
-    def __eq__(self, o):
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, Charset):
+            return False
         return self.charset == o.charset and self.include == o.include
 
     @classmethod
-    def eval(cls, exp, cur):
+    def eval(cls, exp: str, cur: int) -> Tuple['Charset', int]:
         self = cls()
 
         if exp[cur] == '^':
@@ -85,7 +88,7 @@ class Charset(object):
 
         return self, cur
 
-    def __call__(self, ctx, cur):
+    def __call__(self, ctx: Context, cur: int) -> Tuple[bool, int]:
         if ctx.len <= cur:
             return False, cur
         if self.include != (ctx.s[cur] in self.charset):
@@ -93,7 +96,7 @@ class Charset(object):
         return True, cur+1
 
 
-SPECIAL_QUOTES = {
+SPECIAL_QUOTES: Dict[str, Charset] = {
     'd': Charset(charset=set(string.digits), include=True),
     'D': Charset(charset=set(string.digits), include=False),
     's': Charset(charset=set(string.whitespace), include=True),
@@ -105,32 +108,32 @@ SPECIAL_QUOTES = {
 
 class GroupMatch(object):
 
-    def __init__(self, n, name, start):
-        self.n = n
-        self.name = name
-        self.start = start
-        self.end = None
+    def __init__(self, n: int, name: str, start: int) -> None:
+        self.n: int = n
+        self.name: str = name
+        self.start: int = start
+        self.end: Optional[int] = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<group "{self.name}" {self.n}>: {self.start}-{self.end or ""}'
 
 
 class Group(object):
 
-    def __init__(self, name, n):
-        self.name = name
-        self.n = n
+    def __init__(self, name: str, n: int) -> None:
+        self.name: str = name
+        self.n: int = n
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<group "{self.name}" {self.n+1}>'
 
-    def left(self, ctx, cur):
+    def left(self, ctx: Context, cur: int) -> Tuple[bool, int]:
         if len(ctx.groups) <= self.n:
             ctx.groups.append(GroupMatch(self.n, self.name, cur))
         else:
             ctx.groups[self.n].start = cur
         return True, cur
 
-    def right(self, ctx, cur):
+    def right(self, ctx: Context, cur: int) -> Tuple[bool, int]:
         ctx.groups[self.n].end = cur
         return True, cur
