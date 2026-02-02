@@ -1,5 +1,4 @@
 import string
-import logging
 from typing import List, Tuple, Set, Dict, Optional
 
 
@@ -12,7 +11,7 @@ class Context(object):
         self.groups: List['GroupMatch'] = []
 
     def __repr__(self) -> str:
-        return f'<regex context>'
+        return '<regex context>'
 
 
 class Str(str):
@@ -72,7 +71,7 @@ class Charset(object):
                 if exp[cur+1] in SPECIAL_QUOTES:
                     sq = SPECIAL_QUOTES[exp[cur+1]]
                     if sq.include != self.include:
-                        raise Exception(f'invaild charset {s}')
+                        raise Exception(f'invalid charset in {exp}')
                     self.charset |= sq.charset
                 else:
                     self.charset.add(exp[cur+1])

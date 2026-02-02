@@ -1,7 +1,7 @@
 import string
 import unittest
 
-from .matcher import Context, Str, any, Any, Charset
+from .matcher import Context, Str, any, Charset
 
 
 class TestStr(unittest.TestCase):

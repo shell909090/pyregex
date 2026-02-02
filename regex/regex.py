@@ -1,5 +1,5 @@
 import logging
-from typing import Union, Callable, Iterator, List, Tuple, Generator, Optional, Any as AnyType
+from typing import Union, Callable, Iterator, List, Tuple, Generator, Optional
 
 from .matcher import Context, Str, any, Charset, SPECIAL_QUOTES, GroupMatch, Group
 
