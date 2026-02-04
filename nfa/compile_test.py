@@ -478,6 +478,130 @@ class TestCompileQuantifiers(unittest.TestCase):
         self.assertFalse(nfa.match('a'))
 
 
+class TestCompileLimitedQuantifiers(unittest.TestCase):
+    """Test compile function with limited quantifiers {n,m}"""
+
+    def test_exact_repetition(self):
+        """Test {n} - exact repetition"""
+        nfa = compile('a{3}')
+        self.assertFalse(nfa.match(''))
+        self.assertFalse(nfa.match('a'))
+        self.assertFalse(nfa.match('aa'))
+        self.assertTrue(nfa.match('aaa'))
+        self.assertFalse(nfa.match('aaaa'))
+
+    def test_exact_repetition_in_pattern(self):
+        """Test {n} within a pattern"""
+        nfa = compile('xa{3}y')
+        self.assertFalse(nfa.match('xy'))
+        self.assertFalse(nfa.match('xay'))
+        self.assertFalse(nfa.match('xaay'))
+        self.assertTrue(nfa.match('xaaay'))
+        self.assertFalse(nfa.match('xaaaay'))
+
+    def test_minimum_repetition(self):
+        """Test {n,} - n or more repetitions"""
+        nfa = compile('a{2,}')
+        self.assertFalse(nfa.match(''))
+        self.assertFalse(nfa.match('a'))
+        self.assertTrue(nfa.match('aa'))
+        self.assertTrue(nfa.match('aaa'))
+        self.assertTrue(nfa.match('aaaa'))
+        self.assertTrue(nfa.match('aaaaa'))
+
+    def test_minimum_repetition_in_pattern(self):
+        """Test {n,} within a pattern"""
+        nfa = compile('xa{2,}y')
+        self.assertFalse(nfa.match('xy'))
+        self.assertFalse(nfa.match('xay'))
+        self.assertTrue(nfa.match('xaay'))
+        self.assertTrue(nfa.match('xaaay'))
+        self.assertTrue(nfa.match('xaaaay'))
+
+    def test_range_repetition(self):
+        """Test {n,m} - between n and m repetitions"""
+        nfa = compile('a{2,3}')
+        self.assertFalse(nfa.match(''))
+        self.assertFalse(nfa.match('a'))
+        self.assertTrue(nfa.match('aa'))
+        self.assertTrue(nfa.match('aaa'))
+        self.assertFalse(nfa.match('aaaa'))
+
+    def test_range_repetition_in_pattern(self):
+        """Test {n,m} within a pattern"""
+        nfa = compile('xa{2,3}y')
+        self.assertFalse(nfa.match('xy'))
+        self.assertFalse(nfa.match('xay'))
+        self.assertTrue(nfa.match('xaay'))
+        self.assertTrue(nfa.match('xaaay'))
+        self.assertFalse(nfa.match('xaaaay'))
+
+    def test_limited_quantifier_with_charset(self):
+        """Test {n,m} with character set"""
+        nfa = compile('[a-z]{3}')
+        self.assertFalse(nfa.match('ab'))
+        self.assertTrue(nfa.match('abc'))
+        self.assertTrue(nfa.match('xyz'))
+        self.assertFalse(nfa.match('abcd'))
+
+    def test_limited_quantifier_with_dot(self):
+        """Test {n,m} with dot wildcard"""
+        nfa = compile('.{3}')
+        self.assertFalse(nfa.match('ab'))
+        self.assertTrue(nfa.match('abc'))
+        self.assertTrue(nfa.match('123'))
+        self.assertFalse(nfa.match('abcd'))
+
+    def test_multiple_limited_quantifiers(self):
+        """Test multiple {n,m} in one pattern"""
+        nfa = compile('a{2}b{3}')
+        self.assertFalse(nfa.match('abb'))
+        self.assertFalse(nfa.match('aabb'))
+        self.assertTrue(nfa.match('aabbb'))
+        self.assertFalse(nfa.match('aaabbb'))
+
+    def test_limited_quantifier_exact_two(self):
+        """Test {2} - exactly two repetitions"""
+        nfa = compile('a{2}')
+        self.assertFalse(nfa.match('a'))
+        self.assertTrue(nfa.match('aa'))
+        self.assertFalse(nfa.match('aaa'))
+
+    def test_limited_quantifier_range_same(self):
+        """Test {n,n} - range with same min and max (equivalent to exact)"""
+        nfa = compile('a{3,3}')
+        self.assertFalse(nfa.match('aa'))
+        self.assertTrue(nfa.match('aaa'))
+        self.assertFalse(nfa.match('aaaa'))
+
+    def test_range_repetition_wide(self):
+        """Test {n,m} with larger range (m-n > 1)"""
+        nfa = compile('a{2,4}')
+        self.assertFalse(nfa.match('a'))
+        self.assertTrue(nfa.match('aa'))
+        self.assertTrue(nfa.match('aaa'))
+        self.assertTrue(nfa.match('aaaa'))
+        self.assertFalse(nfa.match('aaaaa'))
+
+    def test_range_repetition_very_wide(self):
+        """Test {n,m} with very large range"""
+        nfa = compile('a{2,5}')
+        self.assertFalse(nfa.match('a'))
+        self.assertTrue(nfa.match('aa'))
+        self.assertTrue(nfa.match('aaa'))
+        self.assertTrue(nfa.match('aaaa'))
+        self.assertTrue(nfa.match('aaaaa'))
+        self.assertFalse(nfa.match('aaaaaa'))
+
+    def test_limited_quantifier_with_special_chars(self):
+        """Test {n,m} with special character classes"""
+        nfa = compile('\\d{3}')
+        self.assertFalse(nfa.match('12'))
+        self.assertTrue(nfa.match('123'))
+        self.assertFalse(nfa.match('1234'))
+        self.assertFalse(nfa.match('abc'))
+
+
 class TestCompileAlternation(unittest.TestCase):
     """Test compile function with alternation"""
 

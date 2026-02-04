@@ -537,11 +537,10 @@ class TestMatchEdgeCases(unittest.TestCase):
         """Test NFA with multiple paths to accept state"""
         end = Node('end')
         n1 = Node('n1')
-        n2 = Node('n2')
         start = Node('start')
 
         # Two paths: start->n1->end (via 'a','b')
-        #            start->n2->end (via 'c')
+        #            start->end (via 'c')
         start.outs.append((Char('a'), n1))
         n1.outs.append((Char('b'), end))
         start.outs.append((Char('c'), end))

@@ -2,8 +2,8 @@
 Node definition for NFA.
 """
 import logging
-from typing import List, Set, Tuple
-from .edges import Edge, Empty
+from typing import List, Set, Tuple, Dict, Optional
+from .edges import Edge
 
 
 class Node(object):
@@ -26,6 +26,29 @@ class Node(object):
         if self.name:
             return self.name
         return str(id(self))
+
+    def clone(self, mapping: Dict['Node', 'Node']) -> 'Node':
+        """
+        Clone this node and all its descendants, using a mapping to handle shared nodes.
+
+        This method performs a deep copy of the node graph structure while preserving
+        the topology. The mapping parameter tracks already-cloned nodes to ensure that
+        shared nodes in the original graph remain shared in the cloned graph.
+
+        Args:
+            mapping: Dictionary mapping original nodes to their clones. This is used
+                    to handle cycles and shared nodes correctly.
+
+        Returns:
+            The cloned node corresponding to this node
+        """
+        if self in mapping:
+            return mapping[self]
+        nn = Node(self.name)
+        mapping[self] = nn
+        for e, n in self.outs:
+            nn.outs.append((e, n.clone(mapping)))
+        return nn
 
     def graph2dot(self) -> str:
         """

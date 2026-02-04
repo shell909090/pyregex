@@ -49,6 +49,9 @@
 - `+` - 匹配一次或多次（贪婪）
 - `?` - 匹配零次或一次（贪婪）
 - `*?`、`+?`、`??` - 非贪婪版本
+- `{n}` - 精确匹配 n 次
+- `{n,}` - 匹配至少 n 次
+- `{n,m}` - 匹配 n 到 m 次
 - `[]` - 字符类（如 `[a-z]`、`[0-9]`）
 - `[^]` - 否定字符类（如 `[^0-9]`）
 - `\d`、`\D`、`\s`、`\S`、`\w`、`\W` - 特殊字符类
@@ -158,15 +161,16 @@ ruff check .
 
 ## 测试覆盖率
 
-- **总测试数**：203
+- **总测试数**：217
   - Regex 实现：43 个测试
   - NFA 边类型：39 个测试
   - NFA 节点（包括匹配）：39 个测试
-  - NFA 编译器：82 个测试
+  - NFA 编译器：96 个测试
     - scan_brackets（括号匹配）：14 个测试
     - tokenizer（词法分析）：22 个测试
     - tok_to_set（字符集解析）：10 个测试
-    - compile（编译器）：36 个测试
+    - compile（编译器）：50 个测试
+      - 限定数量量词 {n,m}：14 个测试
 
 ## 示例
 
@@ -203,7 +207,31 @@ print(pattern.match('abcd'))    # True
 print(pattern.match('abbd'))    # True
 ```
 
-### 示例 4：可视化 NFA
+### 示例 4：限定数量量词（NFA）
+```python
+import nfa
+
+# 精确匹配 - 匹配 3 位数字
+pattern = nfa.compile('\\d{3}')
+print(pattern.match('123'))     # True
+print(pattern.match('12'))      # False
+print(pattern.match('1234'))    # False
+
+# 范围匹配 - 密码长度验证（6-12 个字母或数字）
+pattern = nfa.compile('[a-zA-Z0-9]{6,12}')
+print(pattern.match('pass'))       # False (太短)
+print(pattern.match('password'))   # True
+print(pattern.match('pass1234'))   # True
+print(pattern.match('verylongpassword123'))  # False (太长)
+
+# 最少匹配 - 至少 2 个重复字符
+pattern = nfa.compile('a{2,}')
+print(pattern.match('a'))       # False
+print(pattern.match('aa'))      # True
+print(pattern.match('aaaa'))    # True
+```
+
+### 示例 5：可视化 NFA
 ```python
 import nfa
 
@@ -232,6 +260,10 @@ with open('nfa.dot', 'w') as f:
   - 使用层级计数处理任意深度的嵌套括号
   - 从后向前扫描，支持多个连续的括号组
   - 可以正确处理 `(a(b)c)`、`((a)(b))`、`(a)(b)(c)` 等复杂模式
+- 限定数量量词 `{n,m}` 通过节点克隆实现
+  - `Node.clone()` 方法执行深度拷贝并保持图拓扑结构
+  - 使用映射字典处理共享节点和循环引用
+  - 支持 `{n}`（精确）、`{n,}`（最少）、`{n,m}`（范围）三种格式
 - 使用带历史记录跟踪的广度优先搜索进行匹配
 - epsilon 闭包处理状态转换
 - 解耦的边和节点设计提供灵活性

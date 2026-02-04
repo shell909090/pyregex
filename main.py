@@ -22,10 +22,10 @@ def main():
     print(regex.match('abc[a-z]*def', 'abczzdef'))
     print(regex.match('abc(?P<pp>.*)def', 'abczzdef'))
 
-    # 'abc.{2,3}def'
     print(nfa.compile('ab*c').match('abbc'))
     print(nfa.compile('abc.*def').match('abczzdef'))
     print(nfa.compile('abc[a0-9b]*def').match('abc00def'))
+    print(nfa.compile('abc.{2,4}def').match('abc00def'))
     print(nfa.compile('abc\\d+def').match('abc00def'))
     print(nfa.compile('(abc)*end').match('abcabcend'))
 
