@@ -1,7 +1,98 @@
 import string
 import unittest
 
-from .compile import tokenizer, tok_to_set, compile
+from .compile import tokenizer, tok_to_set, compile, scan_brackets
+
+
+class TestScanBrackets(unittest.TestCase):
+    """Test scan_brackets function
+
+    Note: scan_brackets assumes the closing ')' has already been popped from the list.
+    It scans backwards to find the matching '(' for that popped ')'.
+    """
+
+    def test_simple_brackets(self):
+        """Test simple bracket matching"""
+        # Pattern: (a) - after popping ')', toks = ['(', 'a']
+        toks = ['(', 'a']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_nested_brackets(self):
+        """Test nested bracket matching"""
+        # Pattern: ((a)) - after popping outer ')', toks = ['(', '(', 'a', ')']
+        toks = ['(', '(', 'a', ')']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_multiple_groups(self):
+        """Test multiple groups - should match the last group"""
+        # Pattern: (a)(b) - after popping ')', toks = ['(', 'a', ')', '(', 'b']
+        toks = ['(', 'a', ')', '(', 'b']
+        self.assertEqual(scan_brackets(toks), 3)
+
+    def test_deeply_nested(self):
+        """Test deeply nested brackets"""
+        # Pattern: (((a))) - after popping ')', toks = ['(', '(', '(', 'a', ')', ')']
+        toks = ['(', '(', '(', 'a', ')', ')']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_complex_nesting(self):
+        """Test complex nesting with multiple levels"""
+        # Pattern: (a(b)c) - after popping ')', toks = ['(', 'a', '(', 'b', ')', 'c']
+        toks = ['(', 'a', '(', 'b', ')', 'c']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_multiple_at_same_level(self):
+        """Test multiple brackets at the same level"""
+        # Pattern: ((a)(b)) - after popping ')', toks = ['(', '(', 'a', ')', '(', 'b', ')']
+        toks = ['(', '(', 'a', ')', '(', 'b', ')']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_unmatched_opening(self):
+        """Test unmatched opening bracket"""
+        # Missing closing bracket for the opening '('
+        toks = ['(', 'a', 'b']
+        self.assertEqual(scan_brackets(toks), 0)  # Still finds the '('
+
+    def test_no_opening(self):
+        """Test no opening bracket"""
+        toks = ['a', 'b']
+        self.assertEqual(scan_brackets(toks), -1)
+
+    def test_empty_group(self):
+        """Test empty group"""
+        # Pattern: () - after popping ')', toks = ['(']
+        toks = ['(']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_with_operators(self):
+        """Test brackets with operators inside"""
+        # Pattern: (a*b+) - after popping ')', toks = ['(', 'a', '*', 'b', '+']
+        toks = ['(', 'a', '*', 'b', '+']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_alternation_in_group(self):
+        """Test group with alternation"""
+        # Pattern: (a|b) - after popping ')', toks = ['(', 'a', '|', 'b']
+        toks = ['(', 'a', '|', 'b']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_three_nested_groups(self):
+        """Test three nested groups"""
+        # Pattern: (((a))) - after popping ')', toks = ['(', '(', '(', 'a', ')', ')']
+        toks = ['(', '(', '(', 'a', ')', ')']
+        self.assertEqual(scan_brackets(toks), 0)
+
+    def test_inner_group(self):
+        """Test finding inner group match"""
+        # Pattern: (a(b)) - after popping inner ')', toks = ['(', 'a', '(', 'b']
+        toks = ['(', 'a', '(', 'b']
+        self.assertEqual(scan_brackets(toks), 2)  # Should find the inner '('
+
+    def test_complex_sequence(self):
+        """Test complex sequence with multiple nesting levels"""
+        # Pattern: (a)(b(c))  - after popping outer ')', toks = ['(', 'a', ')', '(', 'b', '(', 'c', ')']
+        toks = ['(', 'a', ')', '(', 'b', '(', 'c', ')']
+        self.assertEqual(scan_brackets(toks), 3)
 
 
 class TestTokenizer(unittest.TestCase):

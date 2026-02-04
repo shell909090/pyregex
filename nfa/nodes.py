@@ -83,8 +83,7 @@ class Node(object):
             # Explore all outgoing edges
             for e, next_node in node.outs:
                 # Mark epsilon transitions in history before matching
-                if isinstance(e, Empty):
-                    history.add((cur, id(node)))
+                history.add((cur, id(node)))
 
                 # Try to match the edge
                 new_cur: Optional[int] = e.match(s, cur)

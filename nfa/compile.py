@@ -43,7 +43,7 @@ def compile_subgraph(head: Node, toks: List[str]) -> Node:
         tok = toks.pop(-1)
         match tok[0]:
             case ')':
-                idx = toks.index('(')
+                idx = scan_brackets(toks)
                 if idx == -1:
                     raise Exception('Unmatched parenthesis')
                 newhead = compile_subgraph(head, toks[idx+1:])
@@ -85,11 +85,53 @@ def compile_subgraph(head: Node, toks: List[str]) -> Node:
             case '*?':
                 newhead.outs.insert(0, (Empty(), head))
                 head.outs.insert(0, (Empty(), newhead))
+            case _ if quantifiers.startswith('{'):
+                pass
         quantifiers = '1'
 
         head = newhead
 
     return head
+
+
+def scan_brackets(toks: List[str]) -> int:
+    """
+    Scan for matching opening parenthesis for an already-popped closing parenthesis.
+
+    This function assumes a ')' has already been popped from the end of the token list.
+    It scans backwards through the remaining tokens to find the matching '(' for that
+    popped ')'. It correctly handles nested parentheses by tracking the nesting level.
+
+    Args:
+        toks: List of tokens after the closing ')' has been popped.
+              The function finds the '(' that matches that popped ')'.
+
+    Returns:
+        Index of the matching '(' token, or -1 if not found
+
+    Example:
+        >>> # Pattern: (a) - after popping ')', toks = ['(', 'a']
+        >>> scan_brackets(['(', 'a'])
+        0
+        >>> # Pattern: ((a)) - after popping outer ')', toks = ['(', '(', 'a', ')']
+        >>> scan_brackets(['(', '(', 'a', ')'])
+        0
+        >>> # Pattern: (a)(b) - after popping ')', toks = ['(', 'a', ')', '(', 'b']
+        >>> scan_brackets(['(', 'a', ')', '(', 'b'])
+        3
+    """
+    cur = len(toks) - 1
+    level = 1
+    while cur >= 0:
+        match toks[cur]:
+            case ')':
+                level += 1
+            case '(':
+                level -= 1
+        if level == 0:
+            return cur
+        cur -= 1
+    return -1
 
 
 def tok_to_set(tok: str) -> Tuple[Set[str], bool]:
