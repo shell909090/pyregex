@@ -28,20 +28,7 @@ class Node(object):
         return str(id(self))
 
     def clone(self, mapping: Dict['Node', 'Node']) -> 'Node':
-        """
-        Clone this node and all its descendants, using a mapping to handle shared nodes.
-
-        This method performs a deep copy of the node graph structure while preserving
-        the topology. The mapping parameter tracks already-cloned nodes to ensure that
-        shared nodes in the original graph remain shared in the cloned graph.
-
-        Args:
-            mapping: Dictionary mapping original nodes to their clones. This is used
-                    to handle cycles and shared nodes correctly.
-
-        Returns:
-            The cloned node corresponding to this node
-        """
+        """Deep copy node graph, preserving topology via mapping cache."""
         if self in mapping:
             return mapping[self]
         nn = Node(self.name)
@@ -51,12 +38,7 @@ class Node(object):
         return nn
 
     def graph2dot(self) -> str:
-        """
-        Generate Graphviz DOT format representation of the NFA.
-
-        Returns:
-            DOT format string for visualization
-        """
+        """Generate Graphviz DOT format for NFA visualization."""
         nodes: List['Node'] = [self]
         done: Set['Node'] = set()
         dot_content = "digraph G {\n"
@@ -75,23 +57,9 @@ class Node(object):
         return dot_content
 
     def match(self, s: str) -> bool:
-        """
-        Match string against NFA using breadth-first search.
-
-        The algorithm maintains a queue of states (position, node) and explores
-        all possible paths through the NFA. A state is accepted if we reach a
-        node with no outgoing edges and have consumed the entire input string.
-
-        Args:
-            r: Start node of the NFA
-            s: String to match
-
-        Returns:
-            True if string matches the NFA, False otherwise
-        """
+        """Match string using BFS with history tracking to avoid cycles."""
         # Queue of (position, node) states to explore
         sts: List[Tuple[int, Node]] = [(0, self)]
-
         # Set of (position, node_id) to avoid revisiting same state
         history: Set[Tuple[int, int]] = set()
 

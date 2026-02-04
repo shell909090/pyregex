@@ -10,110 +10,49 @@ from abc import ABC, abstractmethod
 
 
 class Edge(ABC):
-    """
-    Abstract base class for NFA edges.
-
-    Each edge represents a transition condition in the NFA.
-    Edges are decoupled from nodes - they only determine if
-    a transition is possible, not where it leads.
-    """
+    """Abstract base for NFA edges - decoupled from nodes, only check transition conditions."""
 
     @abstractmethod
     def match(self, s: str, cur: int) -> Optional[int]:
-        """
-        Attempt to match the edge condition.
-
-        Args:
-            s: Input string
-            cur: Current position
-
-        Returns:
-            New position if match succeeds, None otherwise
-        """
+        """Try to match at position, return new position or None."""
         pass
 
 
 class Empty(Edge):
-    """
-    Epsilon edge - transition without consuming characters.
-
-    Always succeeds and returns the current position unchanged.
-    """
+    """Epsilon edge - transitions without consuming input."""
 
     def __repr__(self) -> str:
         return 'ε'
 
     def match(self, s: str, cur: int) -> int:
-        """
-        Match epsilon transition.
-
-        Args:
-            s: Input string (unused)
-            cur: Current position
-
-        Returns:
-            Current position (unchanged)
-        """
+        """Always succeeds, returns current position unchanged."""
         return cur
 
 
 class Any(Edge):
-    """
-    Any character edge - matches any single character.
-
-    Succeeds if there is at least one character remaining in the input.
-    """
+    """Matches any single character if available."""
 
     def __repr__(self) -> str:
         return '.'
 
     def match(self, s: str, cur: int) -> Optional[int]:
-        """
-        Match any single character.
-
-        Args:
-            s: Input string
-            cur: Current position
-
-        Returns:
-            New position (cur+1) if match succeeds, None otherwise
-        """
+        """Advance by one if char available."""
         if cur >= len(s):
             return None
         return cur+1
 
 
 class Char(Edge):
-    """
-    Character edge - matches a specific character.
-
-    Succeeds only if the current character in the input matches
-    the expected character.
-    """
+    """Matches a specific character."""
 
     def __init__(self, c: str) -> None:
-        """
-        Initialize character edge.
-
-        Args:
-            c: The character to match
-        """
         self.c: str = c
 
     def __repr__(self) -> str:
         return self.c
 
     def match(self, s: str, cur: int) -> Optional[int]:
-        """
-        Match specific character.
-
-        Args:
-            s: Input string
-            cur: Current position
-
-        Returns:
-            New position (cur+1) if character matches, None otherwise
-        """
+        """Match if current char equals expected char."""
         if cur >= len(s):
             return None
         if s[cur] != self.c:
@@ -122,21 +61,9 @@ class Char(Edge):
 
 
 class Charset(Edge):
-    """
-    Character set edge - matches characters from a set.
-
-    Can be used for both positive character classes (match if in set)
-    and negative character classes (match if not in set).
-    """
+    """Matches chars in/not-in a set, for [a-z] or [^0-9] patterns."""
 
     def __init__(self, s: Set[str], include: bool) -> None:
-        """
-        Initialize character set edge.
-
-        Args:
-            s: Set of characters
-            include: If True, match chars in set; if False, match chars not in set
-        """
         self.s: Set[str] = set(s)
         self.include: bool = include
 
@@ -144,16 +71,7 @@ class Charset(Edge):
         return f'[{"^" if not self.include else ""}{"".join(sorted(self.s))}]'
 
     def match(self, s: str, cur: int) -> Optional[int]:
-        """
-        Match character against set.
-
-        Args:
-            s: Input string
-            cur: Current position
-
-        Returns:
-            New position (cur+1) if character matches set criteria, None otherwise
-        """
+        """Check if char is in/not-in set based on include flag."""
         if cur >= len(s):
             return None
         if self.include:
