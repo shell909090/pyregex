@@ -86,7 +86,7 @@ def run_nfa_tests() -> bool:
 
     def nfa_matcher(pattern: str, text: str) -> bool:
         compiled = nfa.compile(pattern)
-        return nfa.match(compiled, text)
+        return compiled.match(text)
 
     print("=" * 100)
     print("NFA Implementation Test Suite")

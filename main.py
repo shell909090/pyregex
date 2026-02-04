@@ -18,18 +18,16 @@ def main():
     logger.addHandler(handler)
     logger.setLevel(args.loglevel)
 
-    # print(regex.match('abc.*def', 'abczzdef'))
-    # print(regex.match('abc[a-z]*def', 'abczzdef'))
+    print(regex.match('abc.*def', 'abczzdef'))
+    print(regex.match('abc[a-z]*def', 'abczzdef'))
+    print(regex.match('abc(?P<pp>.*)def', 'abczzdef'))
 
-    # print(regex.match('abc(?P<pp>.*)def', 'abczzdef'))
-
-    import pprint
-
-    # 'ab*c', 'abc.*def', 'abc[a0-9b]*def', 'abc.{2,3}def', 'abc\\d+def', '(abc)*end'
-    r = '(abc)*end'
-    t = nfa.compile(r)
-    print(t.graph2dot())
-    print(nfa.match(t, 'abcabcend'))
+    # 'abc.{2,3}def'
+    print(nfa.compile('ab*c').match('abbc'))
+    print(nfa.compile('abc.*def').match('abczzdef'))
+    print(nfa.compile('abc[a0-9b]*def').match('abc00def'))
+    print(nfa.compile('abc\\d+def').match('abc00def'))
+    print(nfa.compile('(abc)*end').match('abcabcend'))
 
 
 if __name__ == '__main__':
