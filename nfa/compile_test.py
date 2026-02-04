@@ -560,6 +560,13 @@ class TestCompileLimitedQuantifiers(unittest.TestCase):
         self.assertTrue(nfa.match('aabbb'))
         self.assertFalse(nfa.match('aaabbb'))
 
+    def test_limited_quantifier_exact_one(self):
+        """Test {1} - exactly one repetition"""
+        nfa = compile('a{1}')
+        self.assertFalse(nfa.match(''))
+        self.assertTrue(nfa.match('a'))
+        self.assertFalse(nfa.match('aa'))
+
     def test_limited_quantifier_exact_two(self):
         """Test {2} - exactly two repetitions"""
         nfa = compile('a{2}')

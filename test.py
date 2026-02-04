@@ -5,7 +5,7 @@ Quick test suite for regex library - supports both regex and nfa implementations
 
 import argparse
 import sys
-from typing import Callable, List, Tuple
+from typing import Callable
 
 
 def test_case(name: str, pattern: str, text: str, expected: bool,

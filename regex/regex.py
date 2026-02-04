@@ -44,6 +44,16 @@ class Search(object):
             cur = next
 
     def search(self, ctx: Context, cur: int) -> Iterator[int]:
+        """
+        Search for matches of this element with quantifier.
+
+        Args:
+            ctx: Matching context
+            cur: Current position in string
+
+        Returns:
+            Iterator of possible match end positions
+        """
         if self.repeat == '*':
             r = self.scan(ctx, cur, cur, len(ctx.s))
         elif self.repeat == '+':
@@ -60,6 +70,15 @@ class Search(object):
 
 
 def buffered(f: Callable[['Regex', str], Generator[Element, None, None]]) -> Callable[['Regex', str], Generator[Union[Str, Element], None, None]]:
+    """
+    Decorator to buffer consecutive string matches into Str elements.
+
+    Args:
+        f: Generator function that yields Element objects
+
+    Returns:
+        Wrapped generator that yields Str or Element objects with buffered strings
+    """
     def _(self: 'Regex', exp: str) -> Generator[Union[Str, Element], None, None]:
         buf = ''
         for m in f(self, exp):
@@ -76,6 +95,15 @@ def buffered(f: Callable[['Regex', str], Generator[Element, None, None]]) -> Cal
 
 
 def debugging(f: Callable[['Regex', Context, int, int, int], Tuple[bool, int]]) -> Callable[['Regex', Context, int, int, int], Tuple[bool, int]]:
+    """
+    Decorator to add debug logging to matching functions.
+
+    Args:
+        f: Matching function to wrap with debug logging
+
+    Returns:
+        Wrapped function with logging output
+    """
     def _(self: 'Regex', ctx: Context, ecur: int, scur: int, depth: int) -> Tuple[bool, int]:
         logging.info(f'{"+"*depth}run: "{self.e[:ecur]}{self.e[ecur:]}", "{ctx.s[:scur]}[{ctx.s[scur:]}]"')
         r = f(self, ctx, ecur, scur, depth)
@@ -95,6 +123,15 @@ class Regex(object):
             self.compile(exp)
 
     def compile(self, exp: str) -> None:
+        """
+        Compile regular expression string into internal representation.
+
+        Args:
+            exp: Regular expression string to compile
+
+        Raises:
+            Exception: If there are unmatched parentheses
+        """
         self.stack = []
         self.group_id = 1
         self.e = list(self._compile(exp))
@@ -139,6 +176,19 @@ class Regex(object):
             yield Search(m, repeat, greedy)
 
     def eval(self, exp: str, cur: int) -> Tuple[Union[Element, Callable[[Context, int], Tuple[bool, int]]], int]:
+        """
+        Parse and evaluate a single regex element from the expression.
+
+        Args:
+            exp: Regular expression string
+            cur: Current position in the expression
+
+        Returns:
+            Tuple of (parsed element, new position)
+
+        Raises:
+            Exception: If expression is invalid at current position
+        """
         if len(exp) <= cur:
             raise Exception()
 
@@ -210,6 +260,15 @@ class Regex(object):
         return True, scur
 
     def match(self, s: str) -> Optional[Context]:
+        """
+        Match the regex pattern against a string from the beginning.
+
+        Args:
+            s: String to match against
+
+        Returns:
+            Context object with match information if successful, None otherwise
+        """
         ctx = Context(s)
         ctx.groups.append(GroupMatch(0, '', 0))
         r = self._match(ctx, 0, 0, 0)
@@ -220,5 +279,15 @@ class Regex(object):
 
 
 def match(exp: str, s: str) -> Optional[Context]:
+    """
+    Compile and match a regex pattern against a string.
+
+    Args:
+        exp: Regular expression pattern
+        s: String to match against
+
+    Returns:
+        Context object with match information if successful, None otherwise
+    """
     r = Regex(exp)
     return r.match(s)

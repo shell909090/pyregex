@@ -21,6 +21,7 @@ def main():
     print(regex.match('abc.*def', 'abczzdef'))
     print(regex.match('abc[a-z]*def', 'abczzdef'))
     print(regex.match('abc(?P<pp>.*)def', 'abczzdef'))
+    print(regex.match('(abc)*end', 'abcabcend'))
 
     print(nfa.compile('ab*c').match('abbc'))
     print(nfa.compile('abc.*def').match('abczzdef'))

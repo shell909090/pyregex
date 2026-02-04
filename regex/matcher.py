@@ -55,6 +55,19 @@ class Charset(object):
 
     @classmethod
     def eval(cls, exp: str, cur: int) -> Tuple['Charset', int]:
+        """
+        Parse and create a Charset from regex expression.
+
+        Args:
+            exp: Regular expression string
+            cur: Current position in expression
+
+        Returns:
+            Tuple of (Charset object, new position)
+
+        Raises:
+            Exception: If charset specification is invalid
+        """
         self = cls()
 
         if exp[cur] == '^':
@@ -127,6 +140,16 @@ class Group(object):
         return f'<group "{self.name}" {self.n+1}>'
 
     def left(self, ctx: Context, cur: int) -> Tuple[bool, int]:
+        """
+        Mark the start of a capture group.
+
+        Args:
+            ctx: Matching context
+            cur: Current position in string
+
+        Returns:
+            Tuple of (True, current position)
+        """
         if len(ctx.groups) <= self.n:
             ctx.groups.append(GroupMatch(self.n, self.name, cur))
         else:
@@ -134,5 +157,15 @@ class Group(object):
         return True, cur
 
     def right(self, ctx: Context, cur: int) -> Tuple[bool, int]:
+        """
+        Mark the end of a capture group.
+
+        Args:
+            ctx: Matching context
+            cur: Current position in string
+
+        Returns:
+            Tuple of (True, current position)
+        """
         ctx.groups[self.n].end = cur
         return True, cur
