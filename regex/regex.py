@@ -96,8 +96,12 @@ class Regex(object):
 
     def compile(self, exp: str) -> None:
         self.stack = []
+        self.group_id = 1
         self.e = list(self._compile(exp))
+        if self.stack:
+            raise Exception('')
         del self.stack
+        del self.group_id
 
     @buffered
     def _compile(self, exp: str) -> Generator[Element, None, None]:
@@ -164,7 +168,8 @@ class Regex(object):
                     raise Exception()
                 name = exp[cur+3:pos]
                 cur = pos+1
-            m = Group(name, len(self.stack)+1)
+            m = Group(name, self.group_id)
+            self.group_id += 1
             self.groups.append(m)
             self.stack.append(m)
             return m.left, cur

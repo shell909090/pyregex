@@ -49,6 +49,8 @@ def compile_subgraph(head: Node, toks: List[str]) -> Node:
                     raise Exception('Unmatched parenthesis')
                 newhead = compile_subgraph(head, toks[idx+1:])
                 toks = toks[:idx]
+            case '(':
+                raise Exception('Unmatched parenthesis')
             case '.':
                 newhead = Node()
                 newhead.outs.append((Any(), head))
@@ -213,7 +215,7 @@ def repeat_n(quantifiers: str, newhead: Node, head: Node) -> Tuple[Node, Node]:
         m = int(m) if m else -1
     else:
         n = int(quantifiers)
-    if n <= 1:
+    if n < 0:
         raise Exception('')
     if m is not None and m != -1 and m < n:
         raise Exception('')
