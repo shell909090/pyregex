@@ -1,35 +1,58 @@
 """
 Match strings using NFA.
 """
+import logging
+from typing import List, Set, Tuple, Optional
 from .edges import Empty
+from .nodes import Node
 
 
-class State(object):
+def match(r: Node, s: str) -> bool:
+    """
+    Match string against NFA using breadth-first search.
 
-    def __init__(self, s, cur, n) -> None:
-        self.s = s
-        self.cur = cur
-        self.n = n
+    The algorithm maintains a queue of states (position, node) and explores
+    all possible paths through the NFA. A state is accepted if we reach a
+    node with no outgoing edges and have consumed the entire input string.
 
-    def __repr__(self) -> str:
-        return f'{self.cur} {id(self.n)}'
+    Args:
+        r: Start node of the NFA
+        s: String to match
 
+    Returns:
+        True if string matches the NFA, False otherwise
+    """
+    # Queue of (position, node) states to explore
+    sts: List[Tuple[int, Node]] = [(0, r)]
 
-def match(r: str, s: str):
-    sts = [State(s, 0, r), ]
-    history = set()
+    # Set of (position, node_id) to avoid revisiting same state
+    history: Set[Tuple[int, int]] = set()
+
     while sts:
-        print(sts)
-        st = sts.pop(0)
-        if not st.n.outs and st.cur == len(st.s):
+        logging.debug(sts)
+        cur, node = sts.pop(0)
+
+        # Accept state: no outgoing edges and consumed entire input
+        if not node.outs and cur == len(s):
             return True
-        for e in st.n.outs:
+
+        # Explore all outgoing edges
+        for e, next_node in node.outs:
+            # Mark epsilon transitions in history before matching
             if isinstance(e, Empty):
-                history.add((st.cur, id(st.n)))
-            newst = e.match(st)
-            if not newst:
+                history.add((cur, id(node)))
+
+            # Try to match the edge
+            new_cur: Optional[int] = e.match(s, cur)
+            if new_cur is None:
                 continue
-            if (newst.cur, id(newst.n)) in history:
+
+            # Check if we've seen this state before
+            state_key = (new_cur, id(next_node))
+            if state_key in history:
                 continue
-            sts.append(newst)
+
+            # Add new state to queue
+            sts.append((new_cur, next_node))
+
     return False

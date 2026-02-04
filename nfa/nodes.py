@@ -1,48 +1,51 @@
 """
 Node definition for NFA.
 """
-from typing import List, Tuple, Any
+from typing import List, Set, Tuple
+from .edges import Edge
 
 
 class Node(object):
     """
     NFA state node.
-    Each node has a list of outgoing edges (transitions).
+
+    Each node contains a list of outgoing transitions, where each transition
+    is a tuple of (edge, target_node). The edge determines the matching logic,
+    while the target_node specifies where to go next.
+
+    This design decouples the edge matching logic from the graph structure.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, name=None) -> None:
         """Initialize empty node with no outgoing edges."""
-        self.outs: List[Tuple[Any, 'Node']] = []
+        self.name = name
+        self.outs: List[Tuple[Edge, 'Node']] = []
 
     def __repr__(self) -> str:
-        return '|'.join(f'{e} {e.next if e.next else ""}' for e in self.outs)
-            
+        if self.name:
+            return self.name
+        return str(id(self))
 
+    def graph2dot(self) -> str:
+        """
+        Generate Graphviz DOT format representation of the NFA.
 
-def to_list(li):
-    p = None
-    for e in reversed(li):
-        e.next = p
-        n = Node()
-        n.outs.append(e)
-        p = n
-    return p
-
-
-def graph2dot(node: Node) -> str:
-    nodes = [node]
-    done = set()
-    dot_content = "digraph G {\n"
-    while nodes:
-        p = nodes.pop(0)
-        if p in done:
-            continue
-        dot_content += f'    "{id(p)}" [label=""];\n'
-        for e in p.outs:
-            next = id(e.next) if e.next else 'end'
-            dot_content += f'    "{id(p)}" -> "{next}" [label="{e}"];\n'
-            if e.next:
-                nodes.append(e.next)
-        done.add(p)
-    dot_content += "}"
-    return dot_content
+        Returns:
+            DOT format string for visualization
+        """
+        nodes: List['Node'] = [self]
+        done: Set['Node'] = set()
+        dot_content = "digraph G {\n"
+        while nodes:
+            p = nodes.pop(0)
+            if p in done:
+                continue
+            dot_content += f'    "{p}" [label=""];\n'
+            for e, next_node in p.outs:
+                next_id: str = str(next_node) if next_node else 'end'
+                dot_content += f'    "{p}" -> "{next_id}" [label="{e}"];\n'
+                if next_node:
+                    nodes.append(next_node)
+            done.add(p)
+        dot_content += "}"
+        return dot_content

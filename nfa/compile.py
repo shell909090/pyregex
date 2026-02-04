@@ -1,68 +1,90 @@
 """
 Compile regex string to NFA using Thompson's Construction.
 """
+import logging
+from typing import List, Tuple, Set, Generator
 from .edges import Empty, Any, Char, Charset, SPECIAL_QUOTES
-from .nodes import Node, to_list
+from .nodes import Node
 
 
-def compile(regex: str):
+def compile(regex: str) -> Node:
+    """
+    Compile regex string to NFA.
+
+    Args:
+        regex: Regular expression string
+
+    Returns:
+        Start node of the compiled NFA
+    """
     toks = list(tokenizer(regex))
-    # print(toks)
-    head = Node()
+    logging.debug(toks)
+    head = Node('end')
     graph = compile_subgraph(head, toks)
+    graph.name = 'begin'
     return graph
 
 
-def compile_subgraph(head: Node, toks: List[str]):
+def compile_subgraph(head: Node, toks: List[str]) -> Node:
+    """
+    Compile a subgraph from token list.
+
+    Args:
+        head: Head node to connect to
+        toks: List of tokens
+
+    Returns:
+        New head node of the compiled subgraph
+    """
     tail = head
     quantifiers = '1'
 
     while toks:
         tok = toks.pop(-1)
-        if tok == ')':
-            idx = toks.index('(')
-            if idx == -1:
-                raise Exception('')
-            newhead = compile_subgraph(head, toks[idx+1:])
-            toks = toks[:idx]
-        elif tok == '.':
-            newhead = Node()
-            newhead.outs.append(Any(head))
-        elif tok[0] == '\\':
-            if tok[1] in SPECIAL_QUOTES:
+        match tok[0]:
+            case ')':
+                idx = toks.index('(')
+                if idx == -1:
+                    raise Exception('Unmatched parenthesis')
+                newhead = compile_subgraph(head, toks[idx+1:])
+                toks = toks[:idx]
+            case '.':
                 newhead = Node()
-                newhead.outs.append(Charset(head, *SPECIAL_QUOTES[tok[1]]))
-            else:
+                newhead.outs.append((Any(), head))
+            case '\\' if len(tok) > 1 and tok[1] in SPECIAL_QUOTES:
                 newhead = Node()
-                newhead.outs.append(Char(head, tok[1]))
-        elif tok[0] == '[':
-            newhead = Node()
-            newhead.outs.append(Charset(head, *tok_to_set(tok)))
-        elif tok == '|':
-            newhead = compile_subgraph(tail, toks)
-            newhead.outs.append(Empty(head))
-        elif tok[0] in '*+?':
-            quantifiers = tok
-            continue
-        else:
-            newhead = Node()
-            newhead.outs.append(Char(head, tok))
+                newhead.outs.append((Charset(*SPECIAL_QUOTES[tok[1]]), head))
+            case '\\':
+                newhead = Node()
+                newhead.outs.append((Char(tok[1]), head))
+            case '[':
+                newhead = Node()
+                newhead.outs.append((Charset(*tok_to_set(tok)), head))
+            case '|':
+                newhead = compile_subgraph(tail, toks)
+                newhead.outs.append((Empty(), head))
+            case '*' | '+' | '?':
+                quantifiers = tok
+                continue
+            case _:
+                newhead = Node()
+                newhead.outs.append((Char(tok), head))
 
         match quantifiers:
             case '?':
-                newhead.outs.append(Empty(head))
+                newhead.outs.append((Empty(), head))
             case '??':
-                newhead.outs.insert(0, Empty(head))
+                newhead.outs.insert(0, (Empty(), head))
             case '+':
-                head.outs.append(Empty(newhead))
+                head.outs.append((Empty(), newhead))
             case '+?':
-                head.outs.insert(0, Empty(newhead))
+                head.outs.insert(0, (Empty(), newhead))
             case '*':
-                newhead.outs.append(Empty(head))
-                head.outs.append(Empty(newhead))
+                newhead.outs.append((Empty(), head))
+                head.outs.append((Empty(), newhead))
             case '*?':
-                newhead.outs.insert(0, Empty(head))
-                head.outs.insert(0, Empty(newhead))
+                newhead.outs.insert(0, (Empty(), head))
+                head.outs.insert(0, (Empty(), newhead))
         quantifiers = '1'
 
         head = newhead
@@ -70,33 +92,48 @@ def compile_subgraph(head: Node, toks: List[str]):
     return head
 
 
-def tok_to_set(tok: str) -> Tuple[str, bool]:
+def tok_to_set(tok: str) -> Tuple[Set[str], bool]:
+    """
+    Parse character set token to set and include flag.
+
+    Args:
+        tok: Token string like '[a-z]' or '[^0-9]'
+
+    Returns:
+        Tuple of (character set, include flag)
+    """
     tok = tok[1:-1]
     include = tok[0] != '^'
     if tok[0] == '^':
         tok = tok[1:]
-    cset = set()
-    while tok:
-        s, tok = tok[0], tok[1:]
-        if tok and tok[0] == '-':
-            for c in range(ord(s), ord(tok[1])+1):
+    cset: Set[str] = set()
+    cur = 0
+    while cur < len(tok):
+        if cur < len(tok) - 2 and tok[cur+1] == '-':
+            for c in range(ord(tok[cur]), ord(tok[cur+2])+1):
                 cset.add(chr(c))
-            tok = tok[2:]
+            cur += 3
         else:
-            cset.add(s)
+            cset.add(tok[cur])
+            cur += 1
     return cset, include
-    
 
 
-def tokenizer(regex: str) -> List[str]:
+def tokenizer(regex: str) -> Generator[str, None, None]:
+    """
+    Tokenize regex string into tokens.
+
+    Args:
+        regex: Regular expression string
+
+    Yields:
+        Token strings
+    """
     cur = 0
     while cur < len(regex):
-        if regex[cur] in '.':
-            yield regex[cur]
-            cur += 1
-        elif regex[cur] in '*+?':
-            if regex[cur+1] == '?':
-                yield regex[cur:cur+1]
+        if regex[cur] in '*+?':
+            if cur + 1 < len(regex) and regex[cur+1] == '?':
+                yield regex[cur:cur+2]
                 cur += 2
             else:
                 yield regex[cur]
@@ -104,23 +141,23 @@ def tokenizer(regex: str) -> List[str]:
         elif regex[cur] == '[':
             idx = regex[cur:].find(']')
             if idx == -1:
-                raise Exception('')
+                raise Exception('Unmatched bracket')
             idx += 1
             yield regex[cur:cur+idx]
             cur += idx
         elif regex[cur] == '{':
             idx = regex[cur:].find('}')
             if idx == -1:
-                raise Exception('')
+                raise Exception('Unmatched brace')
             idx += 1
             yield regex[cur:cur+idx]
             cur += idx
-        elif regex[cur] in '^$':
-            yield regex[cur]
-            cur += 1
         elif regex[cur] == '\\':
-            yield regex[cur:cur+2]
-            cur += 2
+            if cur + 1 < len(regex):
+                yield regex[cur:cur+2]
+                cur += 2
+            else:
+                raise Exception('Incomplete escape sequence')
         else:
             yield regex[cur]
             cur += 1

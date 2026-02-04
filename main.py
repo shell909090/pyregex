@@ -3,6 +3,7 @@ import logging
 import argparse
 
 import regex
+import nfa
 
 
 def main():
@@ -20,7 +21,15 @@ def main():
     # print(regex.match('abc.*def', 'abczzdef'))
     # print(regex.match('abc[a-z]*def', 'abczzdef'))
 
-    print(regex.match('abc(?P<pp>.*)def', 'abczzdef'))
+    # print(regex.match('abc(?P<pp>.*)def', 'abczzdef'))
+
+    import pprint
+
+    # 'ab*c', 'abc.*def', 'abc[a0-9b]*def', 'abc.{2,3}def', 'abc\\d+def', '(abc)*end'
+    r = '(abc)*end'
+    t = nfa.compile(r)
+    print(t.graph2dot())
+    print(nfa.match(t, 'abcabcend'))
 
 
 if __name__ == '__main__':

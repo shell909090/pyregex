@@ -4,6 +4,12 @@ unittest:
 test:
 	python3 test.py
 
+test-regex:
+	python3 test.py --impl regex
+
+test-nfa:
+	python3 test.py --impl nfa
+
 lint:
 	ruff check .
 
