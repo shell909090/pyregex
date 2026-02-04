@@ -215,8 +215,5 @@ class Regex(object):
 
 
 def match(exp: str, s: str) -> Optional[Context]:
-    # import re
-    # m = re.match(exp, s)
-    # return bool(m)
     r = Regex(exp)
     return r.match(s)
