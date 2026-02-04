@@ -154,6 +154,13 @@ class Regex(object):
                 yield m
                 continue
 
+            if (
+                callable(m)
+                and getattr(m, "__name__", "") == "right"
+                and isinstance(getattr(m, "__self__", None), Group)
+            ):
+                raise Exception('quantifier on group is not supported')
+
             # turn to search
             if exp[cur] == '{':
                 pos = exp.find('}', cur+1)
