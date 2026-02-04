@@ -226,7 +226,7 @@ class Regex(object):
         ctx = Context(s)
         ctx.groups.append(GroupMatch(0, '', 0))
         r = self._match(ctx, 0, 0, 0)
-        if r[0]:
+        if r[0] and r[1] == len(s):
             ctx.groups[0].end = r[1]
             return ctx
         return None

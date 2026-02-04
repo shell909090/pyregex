@@ -1,0 +1,7 @@
+[tool.ruff.lint]
+# Extend existing checks with McCabe complexity
+extend-select = ["C90"]
+
+[tool.ruff.lint.mccabe]
+# Set McCabe complexity threshold to 12
+max-complexity = 12
